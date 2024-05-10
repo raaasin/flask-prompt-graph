@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/generative-ai": "https://esm.run/@google/generative-ai"
+      }
+    }
+    </script>
 </head>
 <body>
     <div class="total">
@@ -19,23 +27,15 @@
         </div>
     </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<script type="importmap">
-    {
-      "imports": {
-        "@google/generative-ai": "https://esm.run/@google/generative-ai"
-      }
-    }
-  </script>
 
 <script type="module">  
-const API_KEY = "{{ GOOGLE_API_KEY }}";
+
+const API_KEY = "{{GEMINI_API_KEY}}";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(API_KEY);
-
 async function run() {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
     const chat = model.startChat({
         history: [],
@@ -46,8 +46,9 @@ async function run() {
         const newParagraph = $('<div class="message bot-message"></div>');
         const icon = $('<img class="icon" src="/static/images/bot_icon.png" alt="Bot Icon">');
 
-        $('#chat-container').append(newParagraph);
         newParagraph.append(icon);
+        $('#chat-container').append(newParagraph);
+        
 
         let formattedText = "";
 
