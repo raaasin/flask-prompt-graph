@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="total">
+        <div class="chat-container" id="chat-container">
+            <!-- Chat messages will appear here -->
+        </div>
+        <div class="input-container">
+            <input type="text" id="userMessage" class="input-box" placeholder="Message Graph Bot..." oninput="validateInput()" onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()" class="send-button disabled" id="sendButton" style="margin-right: 10px;" disabled>⬆️</button>
+            <button id="recordButton" style="margin-right: 10px;">🎙️</button>
+            <a href="/" class="modify-button">✒️</a>
+        </div>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userMessageInput = document.getElementById('userMessage');
+
+        function appendMessage(message, messageType) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(messageType);
+
+            const icon = document.createElement('img');
+            icon.classList.add('icon');
+            if (messageType === 'user-message') {
+                icon.src = '/static/images/human_icon.png';
+                icon.alt = 'Human Icon';
+                messageDiv.appendChild(icon);
+
+                const name = document.createElement('div');
+                name.innerText = 'You:';
+                messageDiv.appendChild(name);
+            } else {
+                icon.src = '/static/images/bot_icon.png';
+                icon.alt = 'Bot Icon';
+                messageDiv.appendChild(icon);
+
+                const name = document.createElement('div');
+                name.innerText = 'Bot:';
+                messageDiv.appendChild(name);
+            }
+
+            const messageContent = document.createElement('div');
+            messageContent.classList.add('message-text');
+            messageContent.innerText = message;
+
+            messageDiv.appendChild(messageContent);
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent form submission
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            const userMessage = userMessageInput.value.trim();
+            if (userMessage === '') return; // Do not send if message is empty
+            appendMessage(userMessage, 'user-message');
+
+            fetch('/send_message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'user_message=' + encodeURIComponent(userMessage)
+            })
+            .then(response => response.text())
+            .then(data => {
+                appendMessage(data, 'bot-message');
+                userMessageInput.value = ''; // Clear input after sending
+            })
+            .catch(error => console.error('Error sending message:', error));
+        }
+
+        function validateInput() {
+            const sendButton = document.getElementById('sendButton');
+            const userMessage = userMessageInput.value.trim();
+            if (userMessage.length > 0) {
+                sendButton.classList.remove('disabled');
+                sendButton.removeAttribute('disabled');
+            } else {
+                sendButton.classList.add('disabled');
+                sendButton.setAttribute('disabled', 'disabled');
+            }
+        }
+    </script>
+</body>
+</html>

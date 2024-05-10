@@ -1,0 +1,121 @@
+body {
+    background-color: #211f1f;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.total {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 80vh;
+    width: 80vw;
+}
+
+.chat-container {
+    width: 100%;
+    height: 100%;
+    background-color: #211f1f;
+    border-radius: 10px;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    word-wrap: break-word;
+    display: flex;
+}
+
+.message-text {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.user-message {
+    align-self: flex-start;
+}
+
+.bot-message {
+    align-self: flex-end;
+}
+
+.icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.input-container {
+    width: 100%;
+    display: flex;
+    margin-top: 10px;
+}
+
+.input-box {
+    flex: 1;
+    margin-right: 10px;
+    padding: 10px;
+    font-size: 16px;
+    border-color: oldlace;
+    border-radius: 10px;
+    border-width: 1px;
+    outline: none;
+    background-color: #211f1f;
+    color: oldlace;
+}
+
+.send-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #211f1f;
+    color: oldlace;
+    border-color: oldlace;
+    border-radius: 10px;
+    border-width: 1px;
+    cursor: pointer;
+}
+
+.send-button.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.send-button:hover {
+    background-color: #121e2a;
+}
+
+.modify-button {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #211f1f;
+    color: oldlace;
+    border: 1px solid oldlace;
+    border-radius: 10px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modify-button:hover {
+    background-color: #121e2a;
+}
+
+#recordButton {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #211f1f;
+    color: oldlace;
+    border-color: oldlace;
+    border-radius: 10px;
+    border-width: 1px;
+    cursor: pointer;
+}
