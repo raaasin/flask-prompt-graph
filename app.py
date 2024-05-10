@@ -1,5 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for
 import os
+import pandas as pd
+from dotenv import load_dotenv
+load_dotenv()
+GEMINI_API_KEY=os.getenv("GEMINI_API_KEY")
 
 app = Flask(__name__)
 
@@ -33,7 +37,13 @@ def upload_file_and_start_chat():
 
 @app.route('/chat')
 def chat():
-    return render_template('chat.html')
+    df=pd.read_csv('data.csv')
+    columns=df.columns.tolist()
+    data_types=df.dtypes.to_dict()
+    null_values=df.isnull().sum().to_dict()
+    example_data=df.head().to_dict()
+    return render_template('chat.html', columns=columns, GEMINI_API_KEY=GEMINI_API_KEY, data_types=data_types, null_values=null_values, example_data=example_data)
+
 
 @app.route('/send_message', methods=['POST'])
 def send_message():

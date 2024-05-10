@@ -32,6 +32,7 @@ body {
     border-radius: 5px;
     word-wrap: break-word;
     display: flex;
+    padding-left: 40px;
 }
 
 .message-text {
@@ -82,11 +83,6 @@ body {
     border-radius: 10px;
     border-width: 1px;
     cursor: pointer;
-}
-
-.send-button.disabled {
-    pointer-events: none;
-    opacity: 0.5;
 }
 
 .send-button:hover {

@@ -12,90 +12,98 @@
             <!-- Chat messages will appear here -->
         </div>
         <div class="input-container">
-            <input type="text" id="userMessage" class="input-box" placeholder="Message Graph Bot..." oninput="validateInput()" onkeypress="handleKeyPress(event)">
-            <button onclick="sendMessage()" class="send-button disabled" id="sendButton" style="margin-right: 10px;" disabled>⬆️</button>
+            <input type="text" id="userMessage" class="input-box" placeholder="Message Graph Bot...">
+            <button onclick="sendMessage()" class="send-button" id="sendButton" style="margin-right: 10px;">⬆️</button>
             <button id="recordButton" style="margin-right: 10px;">🎙️</button>
             <a href="/" class="modify-button">✒️</a>
         </div>
     </div>
 
-    <script>
-        const chatContainer = document.getElementById('chat-container');
-        const userMessageInput = document.getElementById('userMessage');
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-        function appendMessage(message, messageType) {
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message');
-            messageDiv.classList.add(messageType);
+<script type="importmap">
+    {
+      "imports": {
+        "@google/generative-ai": "https://esm.run/@google/generative-ai"
+      }
+    }
+  </script>
 
-            const icon = document.createElement('img');
-            icon.classList.add('icon');
-            if (messageType === 'user-message') {
-                icon.src = '/static/images/human_icon.png';
-                icon.alt = 'Human Icon';
-                messageDiv.appendChild(icon);
+<script type="module">  
+const API_KEY = "{{ GOOGLE_API_KEY }}";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+const genAI = new GoogleGenerativeAI(API_KEY);
 
-                const name = document.createElement('div');
-                name.innerText = 'You:';
-                messageDiv.appendChild(name);
-            } else {
-                icon.src = '/static/images/bot_icon.png';
-                icon.alt = 'Bot Icon';
-                messageDiv.appendChild(icon);
+async function run() {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-                const name = document.createElement('div');
-                name.innerText = 'Bot:';
-                messageDiv.appendChild(name);
-            }
+    const chat = model.startChat({
+        history: [],
+    });
 
-            const messageContent = document.createElement('div');
-            messageContent.classList.add('message-text');
-            messageContent.innerText = message;
+    async function doMessage(msg) {
+        const result = await chat.sendMessageStream(msg);
+        const newParagraph = $('<div class="message bot-message"></div>');
+        const icon = $('<img class="icon" src="/static/images/bot_icon.png" alt="Bot Icon">');
 
-            messageDiv.appendChild(messageContent);
+        $('#chat-container').append(newParagraph);
+        newParagraph.append(icon);
 
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
+        let formattedText = "";
 
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault(); // Prevent form submission
-                sendMessage();
+        async function displayTextWithDelay(text) {
+            const words = text.split(/\s+/).filter(word => word.trim() !== '');
+            const delayBetweenWords = 1000 / 10; // 5 words per second
+
+            for (const word of words) {
+                newParagraph.text(newParagraph.text() + word + ' ');
+                await new Promise(resolve => setTimeout(resolve, delayBetweenWords));
             }
         }
 
-        function sendMessage() {
-            const userMessage = userMessageInput.value.trim();
-            if (userMessage === '') return; // Do not send if message is empty
-            appendMessage(userMessage, 'user-message');
-
-            fetch('/send_message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'user_message=' + encodeURIComponent(userMessage)
-            })
-            .then(response => response.text())
-            .then(data => {
-                appendMessage(data, 'bot-message');
-                userMessageInput.value = ''; // Clear input after sending
-            })
-            .catch(error => console.error('Error sending message:', error));
+        for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            await displayTextWithDelay(chunkText);
+            formattedText += chunkText;
         }
 
-        function validateInput() {
-            const sendButton = document.getElementById('sendButton');
-            const userMessage = userMessageInput.value.trim();
-            if (userMessage.length > 0) {
-                sendButton.classList.remove('disabled');
-                sendButton.removeAttribute('disabled');
-            } else {
-                sendButton.classList.add('disabled');
-                sendButton.setAttribute('disabled', 'disabled');
-            }
+        formattedText = formatText(formattedText);
+        newParagraph.html(formattedText);
+
+        $('#chat-container').scrollTop($('#chat-container')[0].scrollHeight);
+    }
+
+    function formatText(text) {
+        text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+        text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
+        text = text.replace(/\n/g, "<br>");
+        return text;
+    }
+
+    function sendMessage() {
+        var userInput = $('#userMessage').val();
+        if (userInput.trim() !== '') {
+            const icon = $('<img class="icon" src="/static/images/human_icon.png" alt="Human Icon">');
+            const userMessage = $('<div class="message user-message" >' + userInput + '</div>');
+
+            $('#chat-container').append(icon);
+            $('#chat-container').append(userMessage);
+            $('#userMessage').val('');
+            doMessage(userInput);
         }
+    }
+
+    $('#sendButton').click(sendMessage);
+
+    $('#userMessage').keypress(function(event) {
+        if (event.which === 13) {
+            sendMessage();
+        }
+    });
+}
+
+run();
+
     </script>
 </body>
 </html>
