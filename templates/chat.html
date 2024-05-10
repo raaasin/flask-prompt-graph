@@ -46,7 +46,7 @@ async function run() {
         const newParagraph = $('<div class="message bot-message"></div>');
         const icon = $('<img class="icon" src="/static/images/bot_icon.png" alt="Bot Icon">');
 
-        newParagraph.append(icon);
+        $('#chat-container').append(icon);
         $('#chat-container').append(newParagraph);
         
 
