@@ -42,7 +42,21 @@ async function run() {
     });
 
     async function doMessage(msg) {
-        const result = await chat.sendMessageStream(msg);
+        var metadata = {
+            "columns": "{{columns}}",
+            "data_types": "{{data_types}}",
+            "null_values": "{{null_values}}",
+            "example_data": "{{example_data}}"
+        };
+
+        var prompt_eng = (
+            "You are graphbot. If the user asks to plot a graph, you only reply with the Python code of Matplotlib to plot the graph and save it as graph.png." +
+            "The data is in data.csv and its attributes are: Columns: " + metadata.columns + ", Data Types: " + metadata.data_types + ", Null Values: " + metadata.null_values + ". " +
+            "If the user does not ask for a graph, you only reply with the answer to the query. " +
+            "The user asks: " + msg
+        );
+
+        const result = await chat.sendMessageStream(prompt_eng);
         const newParagraph = $('<div class="message bot-message"></div>');
         const icon = $('<img class="icon" src="/static/images/bot_icon.png" alt="Bot Icon">');
 
@@ -54,7 +68,7 @@ async function run() {
 
         async function displayTextWithDelay(text) {
             const words = text.split(/\s+/).filter(word => word.trim() !== '');
-            const delayBetweenWords = 1000 / 10; // 5 words per second
+            const delayBetweenWords = 1000 / 120; // 5 words per second
 
             for (const word of words) {
                 newParagraph.text(newParagraph.text() + word + ' ');
