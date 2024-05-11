@@ -57,7 +57,7 @@ async function run() {
         );
 
         const result = await chat.sendMessageStream(prompt_eng);
-        const newParagraph = $('<div class="message bot-message"></div>');
+        const newParagraph = $('<code class="message bot-message"></code>');
         const icon = $('<img class="icon" src="/static/images/bot_icon.png" alt="Bot Icon">');
 
         $('#chat-container').append(icon);
@@ -68,6 +68,8 @@ async function run() {
 
         async function displayTextWithDelay(text) {
             const words = text.split(/\s+/).filter(word => word.trim() !== '');
+            //const correct = text.split(/\s+/).filter(word => word.trim() !== '' && word !== '```' && word !== 'python');
+            //console.log(words);
             const delayBetweenWords = 1000 / 120; // 5 words per second
 
             for (const word of words) {
@@ -77,7 +79,13 @@ async function run() {
         }
 
         for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
+            var chunkText = chunk.text();
+            console.log(chunkText);
+
+            //remove ``` or python from chunkText
+            chunkText = chunkText.replace(/```/g, '');
+            chunkText = chunkText.replace(/python/g, '');
+
             await displayTextWithDelay(chunkText);
             formattedText += chunkText;
         }
