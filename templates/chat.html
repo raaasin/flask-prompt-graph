@@ -27,141 +27,144 @@
         </div>
     </div>
 
+    <script type="module">  
 
-
-<script type="module">  
-
-const API_KEY = "{{GEMINI_API_KEY}}";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-const genAI = new GoogleGenerativeAI(API_KEY);
-async function run() {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
-
-    const chat = model.startChat({
-        history: [],
-    });
-
-    async function doMessage(msg,error_message=null) {
-        var metadata = {
-            "columns": "{{columns}}",
-            "data_types": "{{data_types}}",
-            "null_values": "{{null_values}}",
-            "example_data": "{{example_data}}"
-        };
-
-        if (error_message !== null) {
-            var prompt_eng = msg + ' ' + error_message;
-        }
-        else {
-            var prompt_eng = (
-            "You are graphbot. If the user asks to plot a graph, you only reply with the Python code of Matplotlib to plot the graph and save it as /static/images/graph.png." +
-            "The data is in data.csv and its attributes are: Columns: " + metadata.columns + ", Data Types: " + metadata.data_types + ", Null Values: " + metadata.null_values + ". " +
-            "If the user does not ask for a graph, you only reply with the answer to the query. " +
-            "The user asks: " + msg
-                            );
-                            }
-
-
-        const result = await chat.sendMessageStream(prompt_eng);
-        const newParagraph = $('<code class="message bot-message"></code>');
-        const icon = $('<img class="icon" src="/static/images/bot_icon.png" alt="Bot Icon">');
-
-        $('#chat-container').append(icon);
-        $('#chat-container').append(newParagraph);
+        const API_KEY = "{{GEMINI_API_KEY}}";
+        console.log("API Key:", API_KEY);
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+        console.log("Google Generative AI imported");
+        const genAI = new GoogleGenerativeAI(API_KEY);
+        console.log("Generative AI initialized");
         
-
-        let formattedText = "";
-
-        async function displayTextWithDelay(text) {
-            const words = text.split(/\s+/).filter(word => word.trim() !== '');
-            //const correct = text.split(/\s+/).filter(word => word.trim() !== '' && word !== '```' && word !== 'python');
-            //console.log(words);
-            const delayBetweenWords = 1000 / 120; // 5 words per second
-
-            for (const word of words) {
-                newParagraph.text(newParagraph.text() + word + ' ');
-                await new Promise(resolve => setTimeout(resolve, delayBetweenWords));
+        async function run() {
+            console.log("Run function called");
+        
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+            console.log("Generative Model obtained");
+        
+            const chat = model.startChat({
+                history: [],
+            });
+            console.log("Chat started");
+        
+            async function doMessage(msg,error_message=null) {
+                console.log("doMessage function called with message:", msg);
+        
+                var metadata = {
+                    "columns": "{{columns}}",
+                    "data_types": "{{data_types}}",
+                    "null_values": "{{null_values}}",
+                    "example_data": "{{example_data}}"
+                };
+        
+                if (error_message !== null) {
+                    var prompt_eng = msg + ' ' + error_message;
+                }
+                else {
+                    var prompt_eng = (
+                    "You are graphbot. If the user asks to plot a graph, you only reply with the Python code of Matplotlib to plot the graph and save it as /static/images/graph.png." +
+                    "The data is in data.csv and its attributes are: Columns: " + metadata.columns + ", Data Types: " + metadata.data_types + ", Null Values: " + metadata.null_values + ". " +
+                    "If the user does not ask for a graph, you only reply with the answer to the query. " +
+                    "The user asks: " + msg
+                                    );
+                }
+        
+                console.log("Prompt for chat:", prompt_eng);
+        
+                const result = await chat.sendMessageStream(prompt_eng);
+                console.log("Message sent to chat, waiting for response");
+        
+                const newParagraph = $('<code class="message bot-message"></code>');
+                const icon = $('<img class="icon" src="/static/images/bot_icon.png" alt="Bot Icon">');
+        
+                $('#chat-container').append(icon);
+                $('#chat-container').append(newParagraph);
+        
+                let formattedText = "";
+        
+                async function displayTextWithDelay(text) {
+                    const words = text.split(/\s+/).filter(word => word.trim() !== '');
+                    const delayBetweenWords = 1000 / 120; // 5 words per second
+        
+                    for (const word of words) {
+                        newParagraph.text(newParagraph.text() + word + ' ');
+                        await new Promise(resolve => setTimeout(resolve, delayBetweenWords));
+                    }
+                }
+        
+                for await (const chunk of result.stream) {
+                    var chunkText = chunk.text();
+                    console.log("Received chunk from chat:", chunkText);
+        
+                    chunkText = chunkText.replace(/```/g, '');
+                    chunkText = chunkText.replace(/python/g, '');
+        
+                    await displayTextWithDelay(chunkText);
+                    formattedText += chunkText;
+                }
+                var puretext = formattedText;
+                formattedText = formatText(formattedText);
+                
+                newParagraph.html(formattedText);
+                $('#chat-container').scrollTop($('#chat-container')[0].scrollHeight);
+                console.log("sending this text:", formattedText);
+                fetch('/execute_code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    //send the code to the server
+                    body: JSON.stringify({ code: puretext })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Response from /execute_code route:", data);
+        
+                    if (data.message === 'graph.png') {
+                        const image = $('<img class="message bot-message" src="/static/images/graph.png" alt="Graph">');
+                        $('#chat-container').append(image);
+                    }
+                    else {
+                            msg= "There was an error in executing the code, please take a look at the error and strictly only reply with the full python code do not apologize or anything just give the code "
+                            doMessage(msg, data.message);
+                            i++;
+                        
+                    }
+                });
             }
-        }
-
-        for await (const chunk of result.stream) {
-            var chunkText = chunk.text();
-            console.log(chunkText);
-
-            //remove ``` or python from chunkText
-            chunkText = chunkText.replace(/```/g, '');
-            chunkText = chunkText.replace(/python/g, '');
-
-            await displayTextWithDelay(chunkText);
-            formattedText += chunkText;
-        }
-
-        formattedText = formatText(formattedText);
-        newParagraph.html(formattedText);
-        $('#chat-container').scrollTop($('#chat-container')[0].scrollHeight);
-        //execute python code using flask route /execute_code put the code in the body of the request
-        fetch('/execute_code', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ code: formattedText })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data);
-            //if response is graph.png, display the image
-            if (data.message === 'graph.png') {
-                const image = $('<img class="message bot-message" src="/static/images/graph.png" alt="Graph">');
-                $('#chat-container').append(image);
+        
+            function formatText(text) {
+                text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+                text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
+                text = text.replace(/\n/g, "<br>");
+                return text;
             }
-            //if no successfull execution then repeat for 3 more times and send error message to the LLM
-            else{
-                //initialize loop till graph.png or 3 times
-                var i = 0;
-                while (i < 3) {
-                    //send the same message to the LLM with the error message
-                    msg= "There was an error in executing the cothere has occured an error while executing the code, please take a look at the error and strictly only reply with the full python code do not apologize or anything just give the code "
-                    doMessage(msg,data.message);
-                    i++;
+        
+            function sendMessage() {
+                var userInput = $('#userMessage').val();
+                if (userInput.trim() !== '') {
+                    const icon = $('<img class="icon" src="/static/images/human_icon.png" alt="Human Icon">');
+                    const userMessage = $('<div class="message user-message" >' + userInput + '</div>');
+        
+                    $('#chat-container').append(icon);
+                    $('#chat-container').append(userMessage);
+                    $('#userMessage').val('');
+                    doMessage(userInput);
                 }
             }
-
-        })
-    }
-
-
-    function formatText(text) {
-        text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-        text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
-        text = text.replace(/\n/g, "<br>");
-        return text;
-    }
-
-    function sendMessage() {
-        var userInput = $('#userMessage').val();
-        if (userInput.trim() !== '') {
-            const icon = $('<img class="icon" src="/static/images/human_icon.png" alt="Human Icon">');
-            const userMessage = $('<div class="message user-message" >' + userInput + '</div>');
-
-            $('#chat-container').append(icon);
-            $('#chat-container').append(userMessage);
-            $('#userMessage').val('');
-            doMessage(userInput);
+        
+            $('#sendButton').click(sendMessage);
+        
+            $('#userMessage').keypress(function(event) {
+                if (event.which === 13) {
+                    sendMessage();
+                }
+            });
         }
-    }
-
-    $('#sendButton').click(sendMessage);
-
-    $('#userMessage').keypress(function(event) {
-        if (event.which === 13) {
-            sendMessage();
-        }
-    });
-}
-
-run();
-
-    </script>
+        
+        run();
+        
+        </script>
+        
 </body>
 </html>

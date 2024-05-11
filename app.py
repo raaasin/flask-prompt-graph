@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for
 import os
 import pandas as pd
 from dotenv import load_dotenv
+from flask import jsonify
+
 
 load_dotenv()
 
@@ -52,23 +54,22 @@ def chat():
     print(GEMINI_API_KEY)
     return render_template('chat.html', columns=columns, GEMINI_API_KEY=GEMINI_API_KEY, data_types=data_types, null_values=null_values, example_data=example_data)
 
-@app.route('/send_message', methods=['POST'])
-def send_message():
-    # Dummy response for demonstration
-    user_message = request.form.get('user_message')
-    print("User message:", user_message)
-    return user_message.upper()  # Echo the message in uppercase
-
 @app.route('/execute_code', methods=['POST'])
 def execute_code():
-    code = request.form.get('code')
+    #print request data
+    data = request.json
+    code = data['code']
     try:
+        print(code)
         exec(code)
         print("Code executed successfully")
-        return 'graph.png'
+        #return data.message as 'graph.png'
+        return jsonify(message='graph.png')
+
     except Exception as e:
+        #return jsonified error message
         print("Error executing code:", str(e))
-        return str(e)
+        return jsonify(message=str(e))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
