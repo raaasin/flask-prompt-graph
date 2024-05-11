@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, send_file
 import os
 import pandas as pd
 from dotenv import load_dotenv
@@ -54,6 +54,13 @@ def chat():
     print(GEMINI_API_KEY)
     return render_template('chat.html', columns=columns, GEMINI_API_KEY=GEMINI_API_KEY, data_types=data_types, null_values=null_values, example_data=example_data)
 
+@app.route('/get_image')
+def get_image():
+    try:
+        return send_file('graph.png', mimetype='image/png')
+    except Exception as e:
+        return str(e)
+    
 @app.route('/execute_code', methods=['POST'])
 def execute_code():
     #print request data
