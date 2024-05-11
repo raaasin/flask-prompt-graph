@@ -41,7 +41,7 @@ async function run() {
         history: [],
     });
 
-    async function doMessage(msg) {
+    async function doMessage(msg,error_message=null) {
         var metadata = {
             "columns": "{{columns}}",
             "data_types": "{{data_types}}",
@@ -49,12 +49,18 @@ async function run() {
             "example_data": "{{example_data}}"
         };
 
-        var prompt_eng = (
-            "You are graphbot. If the user asks to plot a graph, you only reply with the Python code of Matplotlib to plot the graph and save it as graph.png." +
+        if (error_message !== null) {
+            var prompt_eng = msg + ' ' + error_message;
+        }
+        else {
+            var prompt_eng = (
+            "You are graphbot. If the user asks to plot a graph, you only reply with the Python code of Matplotlib to plot the graph and save it as /static/images/graph.png." +
             "The data is in data.csv and its attributes are: Columns: " + metadata.columns + ", Data Types: " + metadata.data_types + ", Null Values: " + metadata.null_values + ". " +
             "If the user does not ask for a graph, you only reply with the answer to the query. " +
             "The user asks: " + msg
-        );
+                            );
+                            }
+
 
         const result = await chat.sendMessageStream(prompt_eng);
         const newParagraph = $('<code class="message bot-message"></code>');
@@ -92,9 +98,38 @@ async function run() {
 
         formattedText = formatText(formattedText);
         newParagraph.html(formattedText);
-
         $('#chat-container').scrollTop($('#chat-container')[0].scrollHeight);
+        //execute python code using flask route /execute_code put the code in the body of the request
+        fetch('/execute_code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ code: formattedText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            //if response is graph.png, display the image
+            if (data.message === 'graph.png') {
+                const image = $('<img class="message bot-message" src="/static/images/graph.png" alt="Graph">');
+                $('#chat-container').append(image);
+            }
+            //if no successfull execution then repeat for 3 more times and send error message to the LLM
+            else{
+                //initialize loop till graph.png or 3 times
+                var i = 0;
+                while (i < 3) {
+                    //send the same message to the LLM with the error message
+                    msg= "There was an error in executing the cothere has occured an error while executing the code, please take a look at the error and strictly only reply with the full python code do not apologize or anything just give the code "
+                    doMessage(msg,data.message);
+                    i++;
+                }
+            }
+
+        })
     }
+
 
     function formatText(text) {
         text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
