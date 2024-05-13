@@ -3,6 +3,8 @@ import os
 import pandas as pd
 from dotenv import load_dotenv
 from flask import jsonify
+import base64
+import assemblyai as aai
 
 
 load_dotenv()
@@ -78,5 +80,24 @@ def execute_code():
         print("Error executing code:", str(e))
         return jsonify(message=str(e))
 
+def save_audio(audio_data):
+    audio_bytes = base64.b64decode(audio_data.split(",")[1])
+    with open("static/audio.mp3", "wb") as f:
+        f.write(audio_bytes)
+    return "audio.mp3"
+
+def transcribe(audio_url):
+    transcriber = aai.Transcriber()
+    return transcriber.transcribe("static/audio.mp3")
+
+@app.route('/transcribe', methods=['POST'])
+def transcribe_audio():
+    audio_data = request.form['audio_data']
+    audio_url = save_audio(audio_data)
+    transcript = transcribe(audio_url)
+    if transcript.status == aai.TranscriptStatus.error:
+        return f"Error: {transcript.error}"
+    else:
+        return transcript.text
 if __name__ == '__main__':
     app.run()
